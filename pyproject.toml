@@ -1,0 +1,44 @@
+[project]
+name = "fast-drf"
+version = "0.1.0"
+description = "Drop-in, Rust-accelerated serializers, JSON renderer and parser for Django REST framework"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "django>=4.2,<6",
+    "djangorestframework>=3.14,<3.17",
+    "fast-drf-core",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-django>=4.9",
+    "pytest-benchmark>=4",
+    "hypothesis>=6",
+    "ruff>=0.6",
+]
+
+[tool.uv.sources]
+fast-drf-core = { path = "../fast-drf-core", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.8,<0.13"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py", "bench_*.py"]
+addopts = "--benchmark-skip"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
