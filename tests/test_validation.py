@@ -4,8 +4,8 @@ import pytest
 from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
 
-from fast_drf import serializers
-from fast_drf._compiler import get_compiled
+from drf_oxide import serializers
+from drf_oxide._compiler import get_compiled
 from tests.utils import validate
 
 

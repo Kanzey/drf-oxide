@@ -5,8 +5,8 @@ import pytest
 from django.db.models import Prefetch
 from django.db.models.fields import related_descriptors
 
-from fast_drf import serializers
-from fast_drf._compiler import get_compiled
+from drf_oxide import serializers
+from drf_oxide._compiler import get_compiled
 from tests.testapp.models import Author, AuthorProfile, Book, Tag
 from tests.utils import compare
 
@@ -140,9 +140,9 @@ def test_deleted_instance_raises_like_drf(library):
         lambda: AuthorWithBooksSerializer(author).data,
         lambda: TagSerializer(tag).data,
     ):
-        import fast_drf
+        import drf_oxide
 
-        with fast_drf.disabled():
+        with drf_oxide.disabled():
             try:
                 expected = make()
             except Exception as exc:  # noqa: BLE001
@@ -158,9 +158,9 @@ def test_pk_none_with_stale_prefetch_cache(library):
     author = Author.objects.prefetch_related('books').get(pk=library[0].author_id)
     author.pk = None
 
-    import fast_drf
+    import drf_oxide
 
-    with fast_drf.disabled(), pytest.raises(ValueError):
+    with drf_oxide.disabled(), pytest.raises(ValueError):
         AuthorWithBooksSerializer(author).data  # noqa: B018
     with pytest.raises(ValueError):
         AuthorWithBooksSerializer(author).data  # noqa: B018

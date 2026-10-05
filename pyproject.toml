@@ -1,15 +1,40 @@
 [project]
-name = "fast-drf"
+name = "drf-oxide"
 version = "0.1.0"
 description = "Drop-in, Rust-accelerated serializers, JSON renderer and parser for Django REST framework"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kamil Kobza", email = "kamil1pl@gmail.com" }]
+keywords = ["django", "django-rest-framework", "drf", "serializers", "rust", "performance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+]
 dependencies = [
     "django>=4.2,<6",
     "djangorestframework>=3.14,<3.17",
-    "fast-drf-core",
+    "drf-oxide-core>=0.1.0,<0.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Kanzey/drf-oxide"
+Repository = "https://github.com/Kanzey/drf-oxide"
+Issues = "https://github.com/Kanzey/drf-oxide/issues"
 
 [dependency-groups]
 dev = [
@@ -21,7 +46,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-fast-drf-core = { path = "../fast-drf-core", editable = true }
+drf-oxide-core = { path = "../drf-oxide-core", editable = true }
 
 [build-system]
 requires = ["uv_build>=0.8,<0.13"]

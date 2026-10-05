@@ -1,4 +1,4 @@
-SECRET_KEY = 'fast-drf-tests'
+SECRET_KEY = 'drf-oxide-tests'
 USE_TZ = True
 TIME_ZONE = 'Europe/Warsaw'
 INSTALLED_APPS = [
@@ -11,8 +11,8 @@ DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memor
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 ROOT_URLCONF = 'tests.testapp.urls'
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': ['fast_drf.renderers.JSONRenderer'],
-    'DEFAULT_PARSER_CLASSES': ['fast_drf.parsers.JSONParser'],
+    'DEFAULT_RENDERER_CLASSES': ['drf_oxide.renderers.JSONRenderer'],
+    'DEFAULT_PARSER_CLASSES': ['drf_oxide.parsers.JSONParser'],
     'UNAUTHENTICATED_USER': None,
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES': [],

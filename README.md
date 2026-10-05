@@ -1,10 +1,19 @@
-# fast-drf
+# drf-oxide
 
 Drop-in, Rust-accelerated serializers, JSON renderer and JSON parser for Django REST framework.
-The Rust part lives in [`fast-drf-core`](../fast-drf-core), the same way pydantic sits on pydantic-core.
+The Rust part lives in [`drf-oxide-core`](https://pypi.org/project/drf-oxide-core/), the same way pydantic
+sits on pydantic-core.
+
+```sh
+pip install drf-oxide
+```
+
+Supports Python 3.10–3.13, Django 4.2–5.2 and Django REST framework 3.14–3.16.
+
+## Usage
 
 ```python
-from fast_drf import serializers          # instead of: from rest_framework import serializers
+from drf_oxide import serializers          # instead of: from rest_framework import serializers
 
 
 class BookSerializer(serializers.ModelSerializer):
@@ -15,12 +24,20 @@ class BookSerializer(serializers.ModelSerializer):
 
 ```python
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': ['fast_drf.renderers.JSONRenderer'],
-    'DEFAULT_PARSER_CLASSES': ['fast_drf.parsers.JSONParser'],
+    'DEFAULT_RENDERER_CLASSES': ['drf_oxide.renderers.JSONRenderer'],
+    'DEFAULT_PARSER_CLASSES': ['drf_oxide.parsers.JSONParser'],
 }
 ```
 
-Or, without touching imports, call `fast_drf.patch()` before serializers are imported.
+Or, without touching imports, put `drf_oxide` first in `INSTALLED_APPS`: it swaps DRF's
+`Serializer`, `ModelSerializer`, `HyperlinkedModelSerializer`, `ListSerializer`, `JSONRenderer` and
+`JSONParser` for the fast ones before any other app imports its serializers.
+
+```python
+INSTALLED_APPS = ['drf_oxide', *INSTALLED_APPS]
+```
+
+`drf_oxide.patch()` does the same from code; it has to run before the serializers are defined.
 
 ## How it works
 
@@ -37,14 +54,14 @@ through the descriptor as usual.
 serializer class, language and settings, instead of on every instance as DRF does, as long as the class
 keeps DRF's stock field-building methods. Every instance still gets its own field objects.
 
-- `fast_drf.disabled()` runs plain DRF inside the block.
-- `fast_drf = False` on a serializer class opts it out.
+- `drf_oxide.disabled()` runs plain DRF inside the block.
+- `drf_oxide = False` on a serializer class opts it out.
 
 ## Speed
 
 `make bench` (1000 rows, 15 fields incl. a nested serializer, Python 3.13, release build):
 
-| | DRF | fast-drf | |
+| | DRF | drf-oxide | |
 |---|---|---|---|
 | `Serializer(many=True).data` | 42.6 ms | 8.8 ms | 4.9x |
 | `is_valid()` on a list payload | 131.8 ms | 12.2 ms | 10.8x |
@@ -55,8 +72,13 @@ non-UTC active timezone and UUIDs gain less (~4x / ~2.5x).
 
 ## Development
 
+The two packages live in sibling checkouts of
+[Kanzey/drf-oxide](https://github.com/Kanzey/drf-oxide) and
+[Kanzey/drf-oxide-core](https://github.com/Kanzey/drf-oxide-core); `uv sync` installs the core from
+`../drf-oxide-core`.
+
 ```sh
-cd ../fast-drf-core && make develop   # or `make release` for benchmarks
-cd ../fast-drf && uv sync && make test
+cd ../drf-oxide-core && make develop   # or `make release` for benchmarks
+cd ../drf-oxide && uv sync && make test
 make bench
 ```

@@ -1,4 +1,4 @@
-"""DRF vs fast_drf. Run with `make bench`."""
+"""DRF vs drf_oxide. Run with `make bench`."""
 
 import datetime
 import decimal
@@ -9,9 +9,9 @@ import pytest
 from rest_framework import renderers as drf_renderers
 from rest_framework import serializers as drf
 
-import fast_drf
-from fast_drf import serializers
-from fast_drf.renderers import JSONRenderer
+import drf_oxide
+from drf_oxide import serializers
+from drf_oxide.renderers import JSONRenderer
 
 ITEMS = 1000
 
@@ -98,7 +98,7 @@ def validate():
 @pytest.mark.parametrize('impl', ['drf', 'fast'])
 def test_serialize(benchmark, impl):
     if impl == 'drf':
-        with fast_drf.disabled():
+        with drf_oxide.disabled():
             benchmark(serialize)
     else:
         benchmark(serialize)
@@ -107,7 +107,7 @@ def test_serialize(benchmark, impl):
 @pytest.mark.parametrize('impl', ['drf', 'fast'])
 def test_validate(benchmark, impl):
     if impl == 'drf':
-        with fast_drf.disabled():
+        with drf_oxide.disabled():
             benchmark(validate)
     else:
         benchmark(validate)

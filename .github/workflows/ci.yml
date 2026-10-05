@@ -1,0 +1,80 @@
+# Tests against the matching drf-oxide-core checkout, builds the package and publishes it on a
+# `v*` tag to PyPI (from the `pypi` environment).
+# Publishing uses PyPI trusted publishing, no API tokens. Release drf-oxide-core first.
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uvx ruff check src tests benchmarks
+      - run: uvx ruff format --check src tests benchmarks
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        stack:
+          - django: "4.2.*"
+            drf: "3.14.*"
+          - django: "5.2.*"
+            drf: "3.16.*"
+    steps:
+      # `[tool.uv.sources]` installs the core from ../drf-oxide-core.
+      - uses: actions/checkout@v6
+        with:
+          path: drf-oxide
+      - uses: actions/checkout@v6
+        with:
+          repository: Kanzey/drf-oxide-core
+          path: drf-oxide-core
+      - uses: astral-sh/setup-uv@v7
+      - name: pytest
+        working-directory: drf-oxide
+        run: |
+          uv sync -p ${{ matrix.python }}
+          uv run --no-sync --with "django==${{ matrix.stack.django }}" --with "djangorestframework==${{ matrix.stack.drf }}" pytest
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv build --no-sources
+      - run: uvx twine check --strict dist/*
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: dist
+
+  publish-pypi:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, test, build]
+    runs-on: ubuntu-latest
+    # Add a required reviewer to this environment to approve each release.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/drf-oxide/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

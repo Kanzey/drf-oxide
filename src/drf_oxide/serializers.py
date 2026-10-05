@@ -1,6 +1,6 @@
 """Drop-in replacement for `rest_framework.serializers`.
 
-`from fast_drf import serializers` gives the same names as `from rest_framework import serializers`;
+`from drf_oxide import serializers` gives the same names as `from rest_framework import serializers`;
 `Serializer`, `ModelSerializer`, `HyperlinkedModelSerializer` and `ListSerializer` run their
 `to_representation` / `to_internal_value` loops in Rust.
 """
@@ -23,9 +23,9 @@ DRFListSerializer = _drf.ListSerializer
 
 
 class FastSerializerMixin:
-    """Set `fast_drf = False` on a serializer class to always use the DRF implementation."""
+    """Set `drf_oxide = False` on a serializer class to always use the DRF implementation."""
 
-    fast_drf = True
+    drf_oxide = True
 
     @classmethod
     def many_init(cls, *args, **kwargs):
@@ -63,7 +63,7 @@ class FastModelSerializerMixin(FastSerializerMixin):
 
 
 # The fast classes keep DRF's hierarchy (ModelSerializer is a Serializer, ...), so that after
-# `fast_drf.patch()` `isinstance(x, serializers.Serializer)` holds for every serializer as before.
+# `drf_oxide.patch()` `isinstance(x, serializers.Serializer)` holds for every serializer as before.
 class ModelSerializer(FastModelSerializerMixin, DRFModelSerializer, Serializer):
     pass
 

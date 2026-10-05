@@ -2,11 +2,11 @@
 
 from collections import OrderedDict
 
-import fast_drf_core
+import drf_oxide_core
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models
-from fast_drf_core import STATUS_ERROR, STATUS_OK, STATUS_SKIP
+from drf_oxide_core import STATUS_ERROR, STATUS_OK, STATUS_SKIP
 from rest_framework import VERSION
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SkipField, empty, get_error_detail, is_simple_callable
@@ -59,9 +59,9 @@ def finish_field(field, value, validate_method, run_validators):
 
 
 def configure():
-    if fast_drf_core.is_configured():
+    if drf_oxide_core.is_configured():
         return
-    fast_drf_core.configure(
+    drf_oxide_core.configure(
         empty=empty,
         skip_field=SkipField,
         object_does_not_exist=ObjectDoesNotExist,

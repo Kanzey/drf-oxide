@@ -2,7 +2,7 @@ from collections.abc import Mapping
 
 from rest_framework.exceptions import ErrorDetail
 
-import fast_drf
+import drf_oxide
 
 
 def assert_identical(actual, expected, path='$'):
@@ -23,8 +23,8 @@ def assert_identical(actual, expected, path='$'):
 
 
 def compare(make):
-    """Runs `make()` with DRF and with fast_drf and checks both give the same result."""
-    with fast_drf.disabled():
+    """Runs `make()` with DRF and with drf_oxide and checks both give the same result."""
+    with drf_oxide.disabled():
         expected = make()
     actual = make()
     assert_identical(actual, expected)

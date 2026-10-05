@@ -4,8 +4,8 @@ import pytest
 from django.test import override_settings
 from django.utils import translation
 
-import fast_drf
-from fast_drf import _model_fields, serializers
+import drf_oxide
+from drf_oxide import _model_fields, serializers
 from tests.testapp.models import Author, Book, Membership
 
 
@@ -43,7 +43,7 @@ class CustomBuildSerializer(serializers.ModelSerializer):
 
 @pytest.mark.parametrize('serializer_class', [BookSerializer, DeepBookSerializer, MembershipSerializer])
 def test_same_fields_as_drf(serializer_class):
-    with fast_drf.disabled():
+    with drf_oxide.disabled():
         expected = repr(serializer_class())
     assert repr(serializer_class()) == expected  # builds the recipe
     assert repr(serializer_class()) == expected  # replays it
@@ -68,7 +68,7 @@ def test_fields_are_not_shared():
 
 
 def test_custom_build_methods_are_not_cached():
-    with fast_drf.disabled():
+    with drf_oxide.disabled():
         expected = repr(CustomBuildSerializer())
     assert repr(CustomBuildSerializer()) == expected
     assert CustomBuildSerializer not in {key[0] for key in _model_fields._recipes}
@@ -84,7 +84,7 @@ def test_recipe_per_language_and_settings():
 
     with override_settings(REST_FRAMEWORK={'COERCE_DECIMAL_TO_STRING': False}):
         assert not _model_fields._recipes
-        with fast_drf.disabled():
+        with drf_oxide.disabled():
             expected = repr(BookSerializer())
         assert repr(BookSerializer()) == expected
 
@@ -145,8 +145,8 @@ class NestedBookSerializer(serializers.ModelSerializer):
 
 @pytest.mark.parametrize('language', ['pl', 'en'])
 def test_language_is_fixed_for_the_whole_compilation(language):
-    from fast_drf._compiler import get_compiled
-    from fast_drf._model_fields import compile_language
+    from drf_oxide._compiler import get_compiled
+    from drf_oxide._model_fields import compile_language
 
     _model_fields._recipes.clear()
     with translation.override(language):

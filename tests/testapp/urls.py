@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from fast_drf import serializers
+from drf_oxide import serializers
 
 from .models import Book
 

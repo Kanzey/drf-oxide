@@ -7,8 +7,8 @@ import zoneinfo
 import pytest
 from django.utils import timezone
 
-from fast_drf import serializers
-from fast_drf._compiler import get_compiled
+from drf_oxide import serializers
+from drf_oxide._compiler import get_compiled
 from tests.utils import compare
 
 
@@ -178,7 +178,7 @@ def test_overrides_are_respected():
 
 
 class OptOutSerializer(serializers.Serializer):
-    fast_drf = False
+    drf_oxide = False
     value = serializers.IntegerField()
 
 

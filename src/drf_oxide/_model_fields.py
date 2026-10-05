@@ -52,7 +52,7 @@ BUILD_ATTRIBUTES = (
 _recipes = {}
 
 # `(language,)` while a serializer tree is being compiled, see `_compiler.get_compiled()`.
-compile_language = contextvars.ContextVar('fast_drf_compile_language', default=None)
+compile_language = contextvars.ContextVar('drf_oxide_compile_language', default=None)
 
 
 def _clear(**kwargs):

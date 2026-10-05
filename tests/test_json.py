@@ -9,8 +9,8 @@ from rest_framework import parsers as drf_parsers
 from rest_framework import renderers as drf_renderers
 from rest_framework.exceptions import ParseError
 
-from fast_drf.parsers import JSONParser
-from fast_drf.renderers import JSONRenderer
+from drf_oxide.parsers import JSONParser
+from drf_oxide.renderers import JSONRenderer
 
 
 class Strange:

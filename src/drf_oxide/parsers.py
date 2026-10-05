@@ -2,7 +2,7 @@ import codecs
 import io
 
 from django.conf import settings
-from fast_drf_core import from_json
+from drf_oxide_core import from_json
 from rest_framework import parsers as _drf
 from rest_framework.parsers import *  # noqa: F403
 

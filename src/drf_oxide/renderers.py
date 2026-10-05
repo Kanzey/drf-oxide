@@ -1,4 +1,4 @@
-from fast_drf_core import JsonFallback, to_json
+from drf_oxide_core import JsonFallback, to_json
 from rest_framework import renderers as _drf
 from rest_framework.renderers import *  # noqa: F403
 from rest_framework.utils.encoders import JSONEncoder

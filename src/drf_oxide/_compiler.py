@@ -1,4 +1,4 @@
-"""Compiles a DRF serializer instance into a `fast_drf_core.CompiledSerializer`.
+"""Compiles a DRF serializer instance into a `drf_oxide_core.CompiledSerializer`.
 
 Every field is described for the Rust core either with a native kind or with `python`, in which
 case the core calls the field's own methods. A field only gets a native kind when its class uses
@@ -18,7 +18,7 @@ from django.db.models import query_utils
 from django.db.models.fields import related_descriptors
 from django.db.models.manager import BaseManager
 from django.utils import timezone, translation
-from fast_drf_core import CompiledSerializer
+from drf_oxide_core import CompiledSerializer
 from rest_framework import fields as drf_fields
 from rest_framework import relations as drf_relations
 from rest_framework import serializers as drf_serializers
@@ -28,16 +28,16 @@ from rest_framework.validators import ProhibitSurrogateCharactersValidator
 from . import _state
 from ._model_fields import compile_language
 
-logger = logging.getLogger('fast_drf')
+logger = logging.getLogger('drf_oxide')
 
 ISO_8601 = 'iso-8601'
-CACHE_ATTR = '_fast_drf_compiled'
+CACHE_ATTR = '_drf_oxide_compiled'
 I64_MAX = 2**63 - 1
 FLOAT_EXACT_LIMIT = 2**53
 
 PYTHON = {'type': 'python'}
 
-# Captured before `fast_drf.patch()` can replace the module attributes.
+# Captured before `drf_oxide.patch()` can replace the module attributes.
 DRFSerializer = drf_serializers.Serializer
 DRFListSerializer = drf_serializers.ListSerializer
 DRF_SERIALIZER_TO_REPRESENTATION = DRFSerializer.to_representation
@@ -51,7 +51,7 @@ def get_compiled(serializer):
     except KeyError:
         pass
     compiled = None
-    if getattr(serializer, 'fast_drf', True):
+    if getattr(serializer, 'drf_oxide', True):
         # Nested serializers build their fields during the compilation; look the language up once.
         token = None if compile_language.get() is not None else compile_language.set((translation.get_language(),))
         try:
@@ -59,7 +59,7 @@ def get_compiled(serializer):
         except Exception:
             if _state.strict:
                 raise
-            logger.exception('fast_drf: cannot compile %s, using DRF', type(serializer).__name__)
+            logger.exception('drf_oxide: cannot compile %s, using DRF', type(serializer).__name__)
         finally:
             if token is not None:
                 compile_language.reset(token)

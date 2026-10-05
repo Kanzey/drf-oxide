@@ -1,7 +1,7 @@
 import pytest
 
-from fast_drf import serializers
-from fast_drf._compiler import get_compiled
+from drf_oxide import serializers
+from drf_oxide._compiler import get_compiled
 from tests.testapp.models import Author, Book, Tag
 from tests.utils import compare, validate
 

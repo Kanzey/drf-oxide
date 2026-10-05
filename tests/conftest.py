@@ -3,7 +3,7 @@ import decimal
 
 import pytest
 
-from fast_drf import _state
+from drf_oxide import _state
 from tests.testapp.models import Author, Book, Tag
 
 _state.strict = True
