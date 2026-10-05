@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 
 
@@ -38,3 +40,18 @@ class Book(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     meta = models.JSONField(default=dict)
     version = VersionField(default=1)
+
+
+class AuthorProfile(models.Model):
+    author = models.OneToOneField(Author, related_name='profile', on_delete=models.CASCADE)
+    bio = models.TextField()
+
+
+class Membership(models.Model):
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+    slot = models.PositiveIntegerField(default=1)
+    joined = models.DateField(default=datetime.date(2024, 1, 1))
+    role = models.CharField('rola', max_length=20, choices=[('a', 'A'), ('b', 'B')], unique_for_date='joined')
+
+    class Meta:
+        unique_together = [('author', 'slot')]

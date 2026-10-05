@@ -29,6 +29,14 @@ DRF implementation, otherwise the core calls the field's own Python methods. Nat
 plain, valid case; anything unusual (an error, an odd input type, a value that needs rounding) is handed
 back to DRF, so output and error messages stay identical.
 
+Django relations that are already loaded (`select_related`, `prefetch_related`) are read straight from
+the instance caches, skipping the relation descriptors and the related managers; anything not cached goes
+through the descriptor as usual.
+
+`ModelSerializer` works out its model fields (model introspection, field classes and kwargs) once per
+serializer class, language and settings, instead of on every instance as DRF does, as long as the class
+keeps DRF's stock field-building methods. Every instance still gets its own field objects.
+
 - `fast_drf.disabled()` runs plain DRF inside the block.
 - `fast_drf = False` on a serializer class opts it out.
 

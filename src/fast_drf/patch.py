@@ -4,6 +4,8 @@ Call `fast_drf.patch()` before your serializers are imported, e.g. at the end of
 top of the root `urls.py`. Classes defined before the call keep subclassing the DRF originals.
 """
 
+import warnings
+
 _patched = False
 
 
@@ -12,6 +14,18 @@ def patch():
     if _patched:
         return
     from rest_framework import parsers, renderers, serializers
+
+    too_early = sorted(
+        f'{cls.__module__}.{cls.__qualname__}'
+        for cls in _subclasses(serializers.BaseSerializer)
+        if not cls.__module__.startswith(('rest_framework.', 'fast_drf.'))
+    )
+    if too_early:
+        warnings.warn(
+            f'fast_drf.patch() was called after these serializers were defined, they keep using DRF: '
+            f'{", ".join(too_early)}',
+            stacklevel=2,
+        )
 
     from . import parsers as fast_parsers
     from . import renderers as fast_renderers
@@ -22,3 +36,9 @@ def patch():
     renderers.JSONRenderer = fast_renderers.JSONRenderer
     parsers.JSONParser = fast_parsers.JSONParser
     _patched = True
+
+
+def _subclasses(cls):
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from _subclasses(subclass)

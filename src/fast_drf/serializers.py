@@ -12,6 +12,7 @@ from rest_framework.serializers import *  # noqa: F403
 
 from . import _runtime, _state
 from ._compiler import current_timezone, get_compiled, has_fast_representation, has_fast_validation
+from ._model_fields import cached_model_fields
 
 _runtime.configure()
 
@@ -53,11 +54,21 @@ class Serializer(FastSerializerMixin, DRFSerializer):
     pass
 
 
-class ModelSerializer(FastSerializerMixin, DRFModelSerializer):
+class FastModelSerializerMixin(FastSerializerMixin):
+    def get_fields(self):
+        fields = cached_model_fields(self) if _state.enabled else None
+        if fields is None:
+            return super().get_fields()
+        return fields
+
+
+# The fast classes keep DRF's hierarchy (ModelSerializer is a Serializer, ...), so that after
+# `fast_drf.patch()` `isinstance(x, serializers.Serializer)` holds for every serializer as before.
+class ModelSerializer(FastModelSerializerMixin, DRFModelSerializer, Serializer):
     pass
 
 
-class HyperlinkedModelSerializer(FastSerializerMixin, DRFHyperlinkedModelSerializer):
+class HyperlinkedModelSerializer(DRFHyperlinkedModelSerializer, ModelSerializer):
     pass
 
 

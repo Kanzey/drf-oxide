@@ -6,13 +6,18 @@ the stock DRF implementation of every method the kind replaces, so subclasses th
 behaviour keep working unchanged.
 """
 
+import functools
+import inspect
 import logging
 
 from django.conf import settings
 from django.core import validators as django_validators
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field as DjangoModelField
-from django.utils import timezone
+from django.db.models import query_utils
+from django.db.models.fields import related_descriptors
+from django.db.models.manager import BaseManager
+from django.utils import timezone, translation
 from fast_drf_core import CompiledSerializer
 from rest_framework import fields as drf_fields
 from rest_framework import relations as drf_relations
@@ -21,6 +26,7 @@ from rest_framework.settings import api_settings
 from rest_framework.validators import ProhibitSurrogateCharactersValidator
 
 from . import _state
+from ._model_fields import compile_language
 
 logger = logging.getLogger('fast_drf')
 
@@ -46,12 +52,17 @@ def get_compiled(serializer):
         pass
     compiled = None
     if getattr(serializer, 'fast_drf', True):
+        # Nested serializers build their fields during the compilation; look the language up once.
+        token = None if compile_language.get() is not None else compile_language.set((translation.get_language(),))
         try:
             compiled = compile_serializer(serializer)
         except Exception:
             if _state.strict:
                 raise
             logger.exception('fast_drf: cannot compile %s, using DRF', type(serializer).__name__)
+        finally:
+            if token is not None:
+                compile_language.reset(token)
     serializer.__dict__[CACHE_ATTR] = compiled
     return compiled
 
@@ -62,23 +73,29 @@ def current_timezone():
 
 def compile_serializer(serializer):
     model = getattr(getattr(serializer, 'Meta', None), 'model', None)
-    read_fields = [
-        {
-            'name': field.field_name,
-            'field': field,
-            'get': get_spec(field, model),
-            'repr': repr_spec(field, model),
-        }
-        for field in serializer._readable_fields
-    ]
+    read_fields = []
+    for field in serializer._readable_fields:
+        repr_ = repr_spec(field, model)
+        read_fields.append(
+            {
+                'name': field.field_name,
+                'field': field,
+                'get': get_spec(field, model, repr_),
+                'repr': repr_,
+            }
+        )
     write_fields = [write_spec(serializer, field) for field in serializer._writable_fields]
     return CompiledSerializer(read_fields, write_fields)
 
 
 def is_stock(field, base, *methods):
     """`field` is an instance of `base` and does not override any of `methods`."""
-    cls = type(field)
-    return isinstance(field, base) and all(getattr(cls, name) is getattr(base, name) for name in methods)
+    return is_stock_class(type(field), base, methods)
+
+
+@functools.cache
+def is_stock_class(cls, base, methods):
+    return issubclass(cls, base) and all(getattr(cls, name) is getattr(base, name) for name in methods)
 
 
 def has_fast_representation(serializer):
@@ -114,16 +131,94 @@ def has_fast_list_representation(list_serializer):
 # Reading: attribute access.
 
 
-def get_spec(field, model):
-    if pk_attname(field, model) is not None:
-        return {'type': 'pk_attname', 'attname': pk_attname(field, model)}
+def get_spec(field, model, repr_):
+    attname = pk_attname(field, model)
+    if attname is not None:
+        descriptor = inspect.getattr_static(model, attname, None)
+        from_dict = type(descriptor) in (query_utils.DeferredAttribute, related_descriptors.ForeignKeyDeferredAttribute)
+        return {'type': 'pk_attname', 'attname': attname, 'from_dict': from_dict}
     if model_field_attname(field) is not None:
         return {'type': 'star'}
+    if repr_['type'] == 'pk_many' and is_stock(field, drf_relations.ManyRelatedField, 'get_attribute'):
+        steps = relation_steps(model, field.source_attrs, many_last=True)
+        if len(steps) == 1 and isinstance(steps[0], dict) and steps[0]['kind'] == 'many':
+            return {'type': 'many', 'attrs': steps}
+        return PYTHON
     if type(field).get_attribute is not drf_fields.Field.get_attribute:
         return PYTHON
     if field.source == '*':
         return {'type': 'star'}
-    return {'type': 'attrs', 'attrs': list(field.source_attrs)}
+    # Only consumers that call `.all()` themselves may get the prefetched list instead of the manager.
+    many_last = repr_['type'] == 'nested' and repr_.get('many', False)
+    return {'type': 'attrs', 'attrs': relation_steps(model, field.source_attrs, many_last)}
+
+
+# Django relations read from the instance caches.
+
+FORWARD_DESCRIPTORS = (related_descriptors.ForwardManyToOneDescriptor, related_descriptors.ForwardOneToOneDescriptor)
+
+
+def relation_steps(model, attrs, many_last):
+    """`source_attrs` as core steps: plain names, or relations whose cached value the core may read."""
+    return list(model_relation_steps(model, tuple(attrs), many_last))
+
+
+@functools.cache
+def model_relation_steps(model, attrs, many_last):
+    """Depends on the model classes only, so it is computed once per path."""
+    steps = []
+    for index, attr in enumerate(attrs):
+        step = relation_step(model, attr, many_last and index == len(attrs) - 1) if model is not None else None
+        if step is None:
+            steps.append(attr)
+            model = None
+        else:
+            step, model = step
+            steps.append(step)
+    return tuple(steps)
+
+
+def relation_step(model, attr, many):
+    """`(step, related_model)` for a stock Django relation descriptor, else `None`."""
+    descriptor = inspect.getattr_static(model, attr, None)
+    cls = type(descriptor)
+    if cls in FORWARD_DESCRIPTORS:
+        field = descriptor.field
+        step = {'kind': 'forward', 'cache_name': cache_name(field), 'null': field.null}
+        return {'name': attr, 'model': model, **step}, field.remote_field.model
+    if cls is related_descriptors.ReverseOneToOneDescriptor:
+        related = descriptor.related
+        return {'name': attr, 'model': model, 'kind': 'reverse_one', 'cache_name': cache_name(related)}, (
+            related.related_model
+        )
+    if cls not in (related_descriptors.ReverseManyToOneDescriptor, related_descriptors.ManyToManyDescriptor):
+        return None
+    if not many or descriptor.related_manager_cls.all is not BaseManager.all:
+        return None
+    pk = model._meta.pk.attname
+    if cls is related_descriptors.ReverseManyToOneDescriptor:
+        fk = descriptor.field
+        required = [pk, *(f.attname for f in fk.foreign_related_fields)]
+        step = {'kind': 'many', 'cache_name': cache_name(fk.remote_field), 'required': required}
+        return {'name': attr, 'model': model, **step}, fk.model
+    if cls is related_descriptors.ManyToManyDescriptor:
+        m2m = descriptor.rel.field
+        if descriptor.reverse:
+            prefetch_name, source, target_model = m2m.related_query_name(), m2m.m2m_reverse_field_name(), m2m.model
+        else:
+            prefetch_name, source, target_model = m2m.name, m2m.m2m_field_name(), m2m.remote_field.model
+        source_field = descriptor.rel.through._meta.get_field(source)
+        required = [pk, *(f.attname for f in source_field.foreign_related_fields)]
+        step = {'kind': 'many', 'cache_name': prefetch_name, 'required': required}
+        return {'name': attr, 'model': model, **step}, target_model
+    return None
+
+
+def cache_name(obj):
+    """`FieldCacheMixin.cache_name` (Django >= 5.1) or `get_cache_name()` (older)."""
+    if 'cache_name' in dir(type(obj)):
+        return obj.cache_name
+    return obj.get_cache_name()
 
 
 def is_plain_pk_field(field):

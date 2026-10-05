@@ -44,7 +44,7 @@ def test_fk_uses_attname_without_query(books, django_assert_num_queries):
     book = Book.objects.get(pk=books[0].pk)
     read = get_compiled(BookSerializer(book)).describe()['read']
     assert read['author'] == ('pk_attname', 'pk')
-    assert read['tags'] == ('python', 'pk_many')
+    assert read['tags'] == ('many', 'pk_many')
     assert read['price'] == ('attrs', 'decimal')
     assert read['version'] == ('star', 'model_attr')
 
@@ -55,6 +55,11 @@ def test_fk_uses_attname_without_query(books, django_assert_num_queries):
 
     with django_assert_num_queries(0):
         assert OnlyFk(book).data == {'author': book.author_id, 'editor': book.editor_id}
+
+    # A deferred FK column is loaded by the descriptor, as in DRF.
+    deferred = Book.objects.defer('author').get(pk=book.pk)
+    with django_assert_num_queries(1):
+        assert OnlyFk(deferred).data == {'author': book.author_id, 'editor': book.editor_id}
 
 
 def test_unsaved_instance(db):

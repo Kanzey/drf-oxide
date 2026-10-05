@@ -228,3 +228,19 @@ def test_validate_method():
     validate(CrossFieldSerializer, {'start': '2024-01-02', 'end': '2024-01-01'})
     ok, data = validate(CrossFieldSerializer, {'start': datetime.date(2024, 1, 1), 'end': '2024-01-02'})
     assert ok
+
+
+def reject_blank(value):
+    if value == '':
+        raise ValidationError('blank reached the validator')
+
+
+class BlankWithValidatorSerializer(serializers.Serializer):
+    code = serializers.CharField(allow_blank=True, validators=[reject_blank])
+    trimmed = serializers.CharField(allow_blank=True, validators=[reject_blank], required=False)
+
+
+@pytest.mark.parametrize('payload', [{'code': ''}, {'code': 'x', 'trimmed': '   '}, {'code': 'ok'}], ids=repr)
+def test_blank_skips_validators_like_drf(payload):
+    ok, data = validate(BlankWithValidatorSerializer, payload)
+    assert ok
