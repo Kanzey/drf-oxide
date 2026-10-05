@@ -8,7 +8,7 @@ sits on pydantic-core.
 pip install drf-oxide
 ```
 
-Supports Python 3.10–3.13, Django 4.2–5.2 and Django REST framework 3.14–3.16.
+Supports Python 3.10–3.14, Django 4.2–5.2 and Django REST framework 3.14–3.16.
 
 ## Usage
 

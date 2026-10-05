@@ -27,12 +27,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10", "3.11", "3.12", "3.13"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         stack:
           - django: "4.2.*"
             drf: "3.14.*"
           - django: "5.2.*"
             drf: "3.16.*"
+        exclude:
+          # Django 4.2 does not support Python 3.14.
+          - python: "3.14"
+            stack:
+              django: "4.2.*"
+              drf: "3.14.*"
     steps:
       # `[tool.uv.sources]` installs the core from ../drf-oxide-core.
       - uses: actions/checkout@v6
